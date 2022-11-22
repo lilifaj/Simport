@@ -35,7 +35,12 @@ function prettyPlotSimple(midWindow, datedone, interp_lin, mean, resolution=10)
     common_time = min([i[1+midWindow] for i in datedone]...):resolution:max([i[end-midWindow] for i in datedone]...);
 
     return common_time, prettyPlot(common_time, interp_lin, mean)
+end
 
+function prettyPlotSimple(midWindow, datedone, interp_lin, resolution=10)
+    common_time = min([i[1+midWindow] for i in datedone]...):resolution:max([i[end-midWindow] for i in datedone]...);
+
+    return common_time, prettyPlot(common_time, interp_lin)
 end
 
 function prettyPlotSum(common_time_1, common_time_2, interp_lin_1, interp_lin_2, mean)
