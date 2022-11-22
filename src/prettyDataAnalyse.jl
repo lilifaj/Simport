@@ -47,3 +47,7 @@ end
 function prettyPlot(common_time, interp_lin, mean)
     plot(common_time / 60, [sum(map(i -> i.(common_time), interp_lin)), [mean for i in common_time]], label="", xlabel="Time (min)", ylabel="Perf. (bin/h)")
 end
+
+function prettyPlot(common_time, interp_lin)
+    plot(common_time / 60, sum(map(i -> i.(common_time), interp_lin)), label="", xlabel="Time (min)", ylabel="Perf. (bin/h)")
+end
