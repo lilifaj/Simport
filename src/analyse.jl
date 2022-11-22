@@ -12,12 +12,15 @@ function compute_stats(midWindow, df, begin_shift, end_shift)
         append!(datedone, [filter(:name => r -> r == i, df).datedone])
     end;
 
-    res = rollingSum.(datedone, midWindow)
-    interp_lin = []
+    # res = rollingSum.(datedone, midWindow)
+    # interp_lin = []
 
-    for i in 1:length(datedone)
-        interp_lin = append!(interp_lin, [LinearInterpolation(datedone[i][1+midWindow:end-midWindow], res[i])])
-    end
+    # for i in 1:length(datedone)
+    #     interp_lin = append!(interp_lin, [LinearInterpolation(datedone[i][1+midWindow:end-midWindow], res[i])])
+    # end
+    res = rollingSum(df.datedone, midWindow)
+    interp_lin = []
+    interp_lin = append!(interp_lin, [LinearInterpolation(df.datedone[1+midWindow:end-midWindow], res)])
 
     return name, datedone, res, interp_lin
 end;
