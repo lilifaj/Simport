@@ -3,12 +3,24 @@ include("format.jl");
 
 export printPrettyData, prettyPlotSimple, prettyPlotSum
 
-function printPrettyData(midWindow, path, begin_shift, end_shift, threshhold)
+function getTable(midWindow, path, begin_shift, end_shift, threshhold)
     name, datedone, res, interp_lin, zero = get_stats(midWindow, path, begin_shift, end_shift);
 
     name, means, pass_fail, est = formatPrettyTables(name, datedone, threshhold)
 
+    return datedone, res, interp_lin, zero, name, means, pass_fail, est
+end
+
+function printPrettyData(midWindow, path, begin_shift, end_shift, threshhold)
+    datedone, res, interp_lin, zero, name, means, pass_fail, est = getTable(midWindow, path, begin_shift, end_shift, threshhold)
+
     return datedone, res, interp_lin, zero, pretty_table(Matrix(reduce(hcat, [name, means, est, pass_fail])), header=(["Station", "Mean Perf", "Expected Perf.", "Status"],["","bin/h","bin/h",""]))
+end
+
+function printPrettyData(midWindow, path, begin_shift, end_shift)
+    datedone, res, interp_lin, zero, name, means, _, _ = getTable(midWindow, path, begin_shift, end_shift, 0)
+
+    return datedone, res, interp_lin, zero, pretty_table(Matrix(reduce(hcat, [name, means])), header=(["Station", "Mean Perf"],["","bin/h"]))
 end
 
 function printPrettyData(midWindow, zero, path, begin_shift, end_shift, threshhold)
@@ -19,8 +31,8 @@ function printPrettyData(midWindow, zero, path, begin_shift, end_shift, threshho
     return datedone, res, interp_lin, pretty_table(Matrix(reduce(hcat, [name, means, est, pass_fail])), header=(["Station", "Mean Perf", "Expected Perf.", "Status"],["","bin/h","bin/h",""]))
 end
 
-function prettyPlotSimple(midWindow, datedone, interp_lin, mean)
-    common_time = max([i[1+midWindow] for i in datedone]...):10:min([i[end-midWindow] for i in datedone]...);
+function prettyPlotSimple(midWindow, datedone, interp_lin, mean, resolution=10)
+    common_time = min([i[1+midWindow] for i in datedone]...):resolution:max([i[end-midWindow] for i in datedone]...);
 
     return common_time, prettyPlot(common_time, interp_lin, mean)
 
