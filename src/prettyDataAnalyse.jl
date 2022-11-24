@@ -26,9 +26,7 @@ end;
 
 function prettyPlot(midWindow, df, interp_lin, mean, begin_shift, end_shift, resolution=10)
     df = filter(:datedone => r -> r > begin_shift * 60 && r < df.datedone[end] - end_shift * 60, df)
-    println(df.datedone[end-0])
     common_time = df.datedone[1+midWindow]:resolution:df.datedone[end-midWindow]
-    println(common_time)
 
     return plot(common_time / 60, [sum(map(i -> i.(common_time), interp_lin)) [mean for i in 1:length(common_time)]], label="", xlabel="Time (min)", ylabel="Perf. (bin/h)")
 end
