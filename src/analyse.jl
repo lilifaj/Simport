@@ -1,4 +1,4 @@
-export getDf, getPerformances, getMaxPerformances, getInterpolation, computeTime
+export getDf, getPerformances, getMaxPerformances, getInterpolation
 
 function rollingSum(time, midWindow)
     return [3600 *  midWindow * 2 / (time[i + midWindow] - time[i - midWindow]) for i in Int(1 + midWindow):Int(length(time) - midWindow)]
@@ -24,19 +24,26 @@ function computeTime(df, begin_shift, end_shift)
     return name, datedone
 end
 
-function getMaxPerformances(interp_lin, datedone, midWindow)
-    common_time = min([i[1+midWindow] for i in datedone]...):60:max([i[end-midWindow] for i in datedone]...) ;
-    index = 1:length(common_time) - 60
-    value_max = findmax(map(i -> mean(map(f -> f.(common_time[i:i+40]), interp_lin)[1]), index))
-    beginning = value_max[2] * 60
-    ending = beginning + 3600
-    reduced_datedone = map(t -> filter(x -> x < ending && x > beginning,t), datedone)
+function getMaxPerformances(interp_lin, df, midWindow, window = 60)
+    name = copy(df.name);
+    unique!(name);
+    common_time = df.datedone[1+midWindow]:60:df.datedone[end-midWindow]
+    index = 1:length(common_time) - window
+    value_max = findmax(map(i -> mean(map(f -> f.(common_time[i:i+window]), interp_lin)[1]), index))
+    beginning = value_max[2]
+    ending = beginning + window
+    df = filter(:datedone => r -> r > beginning && r < df.datedone[end] - ending, df)
+    reduced_datedone = [];
+    for i in name
+        append!(reduced_datedone, [filter(:name => r -> r == i, df).datedone])
+    end;
     res = [x != [] ?  3600 * (length(x) - 1) / (x[end] - x[1]) : 0 for x in reduced_datedone]
-    return res
+    return name, res, beginning, ending
 end
 
-function getPerformances(datedone)
-    return 3600 .* (length.(datedone) .- 1) ./ map(i -> i[end] - i[1], datedone);
+function getPerformances(df)
+    name, datedone = computeTime(df, 0, 0)
+    return name, 3600 .* (length.(datedone) .- 1) ./ map(i -> i[end] - i[1], datedone);
 end;
 
 function getDf(file)
