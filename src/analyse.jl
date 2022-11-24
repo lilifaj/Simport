@@ -2,7 +2,14 @@ function rollingSum(time, midWindow)
     return [3600 *  midWindow * 2 / (time[i + midWindow] - time[i - midWindow]) for i in Int(1 + midWindow):Int(length(time) - midWindow)]
 end;
 
-function compute_stats(midWindow, df, begin_shift, end_shift)
+function getInterpolation(midWindow, df)
+    res = rollingSum(df.datedone, midWindow)
+    interp_lin = [LinearInterpolation(df.datedone[1+midWindow:end-midWindow], res)]
+
+    return interp_lin
+end;
+
+function computeTime(df, begin_shift, end_shift)
     name = copy(df.name);
     unique!(name);
 
@@ -12,20 +19,25 @@ function compute_stats(midWindow, df, begin_shift, end_shift)
         append!(datedone, [filter(:name => r -> r == i, df).datedone])
     end;
 
-    # res = rollingSum.(datedone, midWindow)
-    # interp_lin = []
+    return name, datedone
+end
 
-    # for i in 1:length(datedone)
-    #     interp_lin = append!(interp_lin, [LinearInterpolation(datedone[i][1+midWindow:end-midWindow], res[i])])
-    # end
-    res = rollingSum(df.datedone, midWindow)
-    interp_lin = []
-    interp_lin = append!(interp_lin, [LinearInterpolation(df.datedone[1+midWindow:end-midWindow], res)])
+function getMaxPerformances(interp_lin, datedone, midWindow)
+    common_time = min([i[1+midWindow] for i in datedone]...):60:max([i[end-midWindow] for i in datedone]...) ;
+    index = 1:length(common_time) - 60
+    value_max = findmax(map(i -> mean(map(f -> f.(common_time[i:i+40]), interp_lin)[1]), index))
+    beginning = value_max[2] * 60
+    ending = beginning + 3600
+    reduced_datedone = map(t -> filter(x -> x < ending && x > beginning,t), datedone)
+    res = [x != [] ?  3600 * (length(x) - 1) / (x[end] - x[1]) : 0 for x in reduced_datedone]
+    return res
+end
 
-    return name, datedone, res, interp_lin
+function getPerformances(datedone)
+    return 3600 .* (length.(datedone) .- 1) ./ map(i -> i[end] - i[1], datedone);
 end;
 
-function get_df(file)
+function getDf(file)
     df = CSV.File(file) |> DataFrame;
 
     function custom_split(s)
@@ -40,22 +52,6 @@ function get_df(file)
 
     df.datedone = custom_split.(df.datedone);
     df.datedone = DateTime.(df.datedone, "yyyy-mm-dd HH:MM:SS.s");
+    df.datedone = map(i -> Dates.value(i - df.datedone[1]) / 1000, df.datedone);
     return df
-end;
-
-function get_stats(midWindow, file, zero, begin_shift, end_shift)
-    df = get_df(file)
-    df.datedone = map(i -> Dates.value(i - zero) / 1000, df.datedone);
-
-    name, datedone, res, interp_lin = compute_stats(midWindow, df, begin_shift, end_shift)
-    return name, datedone, res, interp_lin
-end;
-
-function get_stats(midWindow, file, begin_shift, end_shift)
-    df = get_df(file)
-    zero = df.datedone[1]
-    df.datedone = map(i -> Dates.value(i - zero) / 1000, df.datedone);
-
-    name, datedone, res, interp_lin = compute_stats(midWindow, df, begin_shift, end_shift)
-    return name, datedone, res, interp_lin, zero
 end;
