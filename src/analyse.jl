@@ -32,7 +32,7 @@ function getMaxPerformances(interp_lin, df, midWindow, window = 60)
     value_max = findmax(map(i -> mean(map(f -> f.(common_time[i:i+window]), interp_lin)[1]), index))
     beginning = value_max[2]
     ending = beginning + window
-    df = filter(:datedone => r -> r > beginning && r < df.datedone[end] - ending, df)
+    df = filter(:datedone => r -> r > beginning * 60 && r < ending * 60, df)
     reduced_datedone = [];
     for i in name
         append!(reduced_datedone, [filter(:name => r -> r == i, df).datedone])
