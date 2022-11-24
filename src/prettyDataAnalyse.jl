@@ -1,6 +1,6 @@
 include("analyse.jl");
 
-export prettyTable, prettyPlot
+export prettyTable, prettyPlot, computeTable
 
 function computeTable(name, performances, threshhold)
     n = length(performances)
