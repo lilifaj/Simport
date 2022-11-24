@@ -1,3 +1,5 @@
+export getDf, getPerformances, getMaxPerformances, getInterpolation
+
 function rollingSum(time, midWindow)
     return [3600 *  midWindow * 2 / (time[i + midWindow] - time[i - midWindow]) for i in Int(1 + midWindow):Int(length(time) - midWindow)]
 end;
