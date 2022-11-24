@@ -4,11 +4,11 @@ export prettyTable, prettyPlot
 
 function computeTable(name, performances, threshhold)
     n = length(performances)
-    performances = round.(performances)
+    performances = round.(performances, digits=1)
     pass_fail = [x > threshhold ? "PASS" : "FAIL" for x in performances];
     pass_fail = push!(pass_fail, sum(performances) > n * threshhold ? "PASS" : "FAIL");
     push!(name, "All ");
-    performances = append!(performances,floor(sum(performances)))
+    performances = append!(performances,round(sum(performances), digits=1))
     estimated = vcat([threshhold for i in 1:n], [n * threshhold])
 
     return performances, estimated, pass_fail
