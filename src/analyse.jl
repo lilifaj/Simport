@@ -1,14 +1,16 @@
-export getDf, getPerformances, getMaxPerformances, getInterpolation
+export getDf, getPerformances, getMaxPerformances
 
 function rollingSum(time, midWindow)
     return [3600 *  midWindow * 2 / (time[i + midWindow] - time[i - midWindow]) for i in Int(1 + midWindow):Int(length(time) - midWindow)]
 end;
 
-function getInterpolation(midWindow, df)
-    res = rollingSum(df.datedone, midWindow)
-    interp_lin = [LinearInterpolation(df.datedone[1+midWindow:end-midWindow], res)]
+function getPerformances(datedone, timeWindow, resolution)
+    res = []
+    for i in 0:resolution:datedone[end]
+        append!(res, 3600 * sum(i - timeWindow / 2 .< datedone .< i + timeWindow / 2) / timeWindow)
+    end
 
-    return interp_lin
+    return res
 end;
 
 function computeTime(df, begin_shift, end_shift)
@@ -24,29 +26,30 @@ function computeTime(df, begin_shift, end_shift)
     return name, datedone
 end
 
-function getMaxPerformances(interp_lin, df, midWindow, window = 60)
+function getMaxPerformancesStations(df, performances, window = 60, resolution = 30)
     name = copy(df.name);
     unique!(name);
-    common_time = df.datedone[1+midWindow]:60:df.datedone[end-midWindow]
-    index = 1:length(common_time) - window
-    value_max = findmax(map(i -> mean(map(f -> f.(common_time[i:i+window]), interp_lin)[1]), index))
-    beginning = value_max[2]
-    ending = beginning + window
-    df = filter(:datedone => r -> r > beginning * 60 && r < ending * 60, df)
+
+    index = 1:1:length(performances) - Int(60 / resolution) * window
+    value_max = findmax(map(i -> mean(performances[i:i + Int(60 / resolution) * window]), index))
+
+    beginning = resolution * value_max[2]
+    ending = beginning + 60 * window
+    df = filter(:datedone => r -> r > beginning && r < ending, df)
     reduced_datedone = [];
     for i in name
         append!(reduced_datedone, [filter(:name => r -> r == i, df).datedone])
     end;
     res = [x != [] ?  3600 * (length(x) - 1) / (x[end] - x[1]) : 0 for x in reduced_datedone]
-    return name, res, beginning, ending
+    return name, res, round(beginning/60), round(ending/60)
 end
 
-function getPerformances(df)
+function getPerformancesStations(df)
     name, datedone = computeTime(df, 0, 0)
     return name, 3600 .* (length.(datedone) .- 1) ./ map(i -> i[end] - i[1], datedone);
 end;
 
-function getDf(file)
+function getDf(file, beginning, ending)
     df = CSV.File(file) |> DataFrame;
 
     function custom_split(s)
@@ -61,6 +64,12 @@ function getDf(file)
 
     df.datedone = custom_split.(df.datedone);
     df.datedone = DateTime.(df.datedone, "yyyy-mm-dd HH:MM:SS.s");
-    df.datedone = map(i -> Dates.value(i - df.datedone[1]) / 1000, df.datedone);
+    zero = df.datedone[1]
+    df.datedone = map(i -> Dates.value(i - zero) / 1000, df.datedone);
+    df.received_time = custom_split.(df.received_time);
+    df.received_time = DateTime.(df.received_time, "yyyy-mm-dd HH:MM:SS.s");
+    df.received_time = map(i -> Dates.value(i - zero) / 1000, df.received_time);
+
+    df = filter(:datedone => r -> r >= beginning * 60 && r <= ending * 60, df)
     return df
 end;
