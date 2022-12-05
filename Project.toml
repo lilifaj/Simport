@@ -1,7 +1,7 @@
 name = "Simport"
 uuid = "de431233-3c35-4609-ac26-dc804092a69e"
 authors = ["descouens "]
-version = "0.3.0"
+version = "0.3.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
