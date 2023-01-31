@@ -1,0 +1,45 @@
+---
+numbersections: true
+---
+
+# Paltac
+
+$192$ robots were used to perform this simulation. An operator time of $3$s has been used for the bolero, as well as empty preparation containers.
+
+```julia;echo=false
+using Plots, Simport, Dates;
+resolution = 30;
+df = getDf("sim_station.csv", 0, 10000);
+perf = getPerformances(df.datedone, 2000, resolution)
+name, maxStationPerf, beginning, ending= Simport.getMaxPerformancesStations(df, perf, 120, resolution);
+
+```
+
+```julia, echo=false
+prettyTable(name, maxStationPerf);
+```
+
+```julia, echo=false
+f(x) = sum(df.received_time .< x) - sum(df.datedone .< x)
+time = (x -> Dates.format(Dates.DateTime(2022,12,6,7,0,0,0) + Dates.Second(x), "HH:MM:SS")).(0:resolution:df.datedone[end])
+
+plot((0:resolution:df.datedone[end]) / 60, perf, xrot=60, xticks = (1:30:length(time), time[1:60:end]), label="Throughput", ylabel="Throughput (bin/h)")
+vspan!([beginning, ending],
+    alpha=0.3,
+    label="Performance Measurement Window",
+    legend=:outertop)
+```
+
+```julia, echo=false
+plot((0:resolution:df.datedone[end]) / 60, f.(0:resolution:df.datedone[end]), xticks = (1:30:length(time), time[1:60:end]), xrot=60, formatter = identity, ylabel="Unfinished Lines", label="")
+```
+
+\newpage{}
+
+# Appendix {-}
+
+```julia, echo=false
+using CSV, DataFrames
+df = CSV.File("sim_settings.csv") |> DataFrame;
+print(df)
+```
